@@ -9,11 +9,10 @@
   <img src="store-assets/screenshots/04-guided-session.png" width="200" alt="Guided session" />
 </p>
 
-A personal, offline-first workout tracker. Ships with three 12-week programs
-(Beginner / Intermediate / Advanced, Full Body, home equipment) and syncs
-more from a public GitHub program library — pick one from a filterable
-picker, it's pinned to Home, and every exercise's real demo video/image comes
-from ExerciseDB.
+A personal, offline-first workout tracker. Ships with three curated 12-week
+home programs: a full-body plan, a 15-minute weighted plan, and a knee-friendly
+full-body plan. The Android and web apps use the same program library and guided
+session model, with bundled/public exercise media where available.
 
 ## Web app
 

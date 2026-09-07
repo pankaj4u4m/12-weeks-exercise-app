@@ -4,7 +4,7 @@
 // filenames are content-hashed and change every deploy, so a static
 // precache list would go stale; caching whatever's actually fetched avoids
 // that entirely at the cost of the very first load needing a network hit.
-const CACHE_NAME = 'twelveweek-v1';
+const CACHE_NAME = 'twelveweek-v2-curated-plans';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
