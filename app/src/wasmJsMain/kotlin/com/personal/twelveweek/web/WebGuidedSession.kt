@@ -69,7 +69,7 @@ import kotlinx.coroutines.delay
 /** Same per-rep pacing the program library's own estimatedMinutes figures
  *  are built from — matches the Android app's guided session exactly. */
 private const val SECONDS_PER_REP = 2.5
-private const val MOTIVATION_CHANCE = 0.5f
+private const val MOTIVATION_CHANCE = 0.9f
 
 /**
  * Web port of the Android app's `ui.GuidedSessionScreen` — same state
@@ -95,6 +95,11 @@ fun WebGuidedSessionScreen(
     val transitionSeconds = remember { settings.transitionSeconds }
     val repPrepSeconds = remember { settings.repPrepSeconds }
     val voice = remember { WebVoiceCoach(isEnabled = { settings.voiceEnabled }) }
+
+    LaunchedEffect(workout.programId, workout.week, workout.index) {
+        delay(650)
+        voice.speak(WebWorkoutIntroCues.pick(workout.programId))
+    }
 
     val steps = remember(workout) { workout.webGuidedSteps() }
 
@@ -140,7 +145,7 @@ fun WebGuidedSessionScreen(
         voice.speak(
             when {
                 nextStep.exercise.isRest -> WebRestCues.start()
-                nextStep.sectionTitle.equals("Cool Down", ignoreCase = true) -> WebStretchCues.start()
+                webIsStretchSection(nextStep.sectionTitle) -> WebStretchCues.start()
                 else -> "Up next: ${nextStep.exercise.name}"
             }
         )
@@ -154,7 +159,7 @@ fun WebGuidedSessionScreen(
         }
     }
 
-    val finisherLine = remember(finished) { if (finished) WebFinisherCues.pick() else "" }
+    val finisherLine = remember(finished) { if (finished) WebFinisherCues.pick(workout.programId) else "" }
     LaunchedEffect(finished) {
         if (finished) voice.speak(finisherLine)
     }
@@ -171,7 +176,7 @@ fun WebGuidedSessionScreen(
     if (finished) {
         WebSessionCompleteScreen(
             headline = finisherLine,
-            movementCount = steps.size,
+            movementCount = steps.count { !it.exercise.isRest },
             streakDays = progress.currentStreak(),
             newMilestones = newMilestones,
             onExit = onExit
@@ -181,7 +186,7 @@ fun WebGuidedSessionScreen(
 
     if (transitioning) {
         val nextStep = steps[nextIndex]
-        val nextIsCooldown = nextStep.sectionTitle.equals("Cool Down", ignoreCase = true)
+        val nextIsCooldown = webIsStretchSection(nextStep.sectionTitle)
         WebTransitionScreen(
             label = when {
                 nextStep.exercise.isRest -> "REST UP"
@@ -210,6 +215,17 @@ fun WebGuidedSessionScreen(
     val step = steps[index]
     val totalSeconds = step.exercise.seconds
     val repsCount = step.exercise.reps
+    val exerciseTotal = remember(steps) { steps.count { !it.exercise.isRest } }
+    val exerciseOrdinal = remember(index, steps) { steps.take(index + 1).count { !it.exercise.isRest } }
+    val coachTags = remember(step.key, exerciseOrdinal, exerciseTotal) {
+        when {
+            step.exercise.isRest -> setOf("rest")
+            else -> webMotivationTagsFor(step.exercise.name, step.sectionTitle, exerciseOrdinal, exerciseTotal)
+        }
+    }
+    var coachCueText by remember(step.key, workout.programId) {
+        mutableStateOf(WebMotivationLibrary.pick(coachTags, workout.programId).text)
+    }
 
     var mediaBundle by remember(step.key, keyVersion) { mutableStateOf<List<WebMediaPage>>(emptyList()) }
     LaunchedEffect(step.key, keyVersion) {
@@ -233,8 +249,15 @@ fun WebGuidedSessionScreen(
                 voice.speak(
                     when {
                         step.exercise.isRest -> WebRestCues.halfway()
-                        step.sectionTitle.equals("Cool Down", ignoreCase = true) -> WebStretchCues.halfway()
-                        else -> "Halfway there"
+                        webIsStretchSection(step.sectionTitle) -> {
+                            coachCueText = WebMotivationLibrary.pick(coachTags, workout.programId, coachCueText).text
+                            WebStretchCues.halfway()
+                        }
+                        else -> {
+                            val nextCue = WebMotivationLibrary.pick(coachTags, workout.programId, coachCueText).text
+                            coachCueText = nextCue
+                            nextCue
+                        }
                     }
                 )
             }
@@ -243,7 +266,7 @@ fun WebGuidedSessionScreen(
                 voice.speak(
                     when {
                         step.exercise.isRest -> WebRestCues.almostDone()
-                        step.sectionTitle.equals("Cool Down", ignoreCase = true) -> WebStretchCues.almostDone()
+                        webIsStretchSection(step.sectionTitle) -> WebStretchCues.almostDone()
                         else -> "5 seconds remaining"
                     }
                 )
@@ -263,6 +286,7 @@ fun WebGuidedSessionScreen(
     var repElapsed by remember(step.key) { mutableIntStateOf(0) }
     var repRunning by remember(step.key) { mutableStateOf(repsCount != null) }
     var announcedGo by remember(step.key) { mutableStateOf(false) }
+    var announcedRepHalfway by remember(step.key) { mutableStateOf(false) }
 
     LaunchedEffect(step.key, repRunning) {
         if (repsCount == null || repTargetSeconds == null || !repRunning) return@LaunchedEffect
@@ -278,6 +302,12 @@ fun WebGuidedSessionScreen(
         while (repRunning && repElapsed < repTargetSeconds) {
             delay(1000)
             repElapsed += 1
+            if (repTargetSeconds >= 12 && !announcedRepHalfway && repElapsed >= repTargetSeconds / 2) {
+                announcedRepHalfway = true
+                val nextCue = WebMotivationLibrary.pick(coachTags, workout.programId, coachCueText).text
+                coachCueText = nextCue
+                voice.speak(nextCue)
+            }
         }
         if (repRunning && repElapsed >= repTargetSeconds) {
             webBuzz()
@@ -310,14 +340,9 @@ fun WebGuidedSessionScreen(
     }
 
     LaunchedEffect(step.key) {
-        if (Random.nextFloat() > MOTIVATION_CHANCE) return@LaunchedEffect
-        delay(if (repsCount != null) (repPrepSeconds + 2) * 1000L else 2500L)
-        val tags = when {
-            step.exercise.isRest -> setOf("general")
-            step.sectionTitle.equals("Cool Down", ignoreCase = true) -> setOf("stretch")
-            else -> webMotivationTagsFor(step.exercise.name, step.sectionTitle)
-        }
-        voice.speak(WebMotivationLibrary.pick(tags).text)
+        if (step.exercise.isRest || Random.nextFloat() > MOTIVATION_CHANCE) return@LaunchedEffect
+        delay(if (repsCount != null) (repPrepSeconds + 2) * 1000L else 3000L)
+        voice.speak(coachCueText)
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp)) {
@@ -327,7 +352,11 @@ fun WebGuidedSessionScreen(
             }
             Column(Modifier.weight(1f)) {
                 Text("Week ${workout.week} · ${workout.title}", style = MaterialTheme.typography.titleMedium)
-                Text("${index + 1} of ${steps.size}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    if (step.exercise.isRest) "Rest" else "$exerciseOrdinal of $exerciseTotal",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             IconButton(onClick = {
                 voiceEnabled = !voiceEnabled
@@ -372,6 +401,8 @@ fun WebGuidedSessionScreen(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Spacer(Modifier.height(8.dp))
+        WebCoachCueCard(coachCueText)
         Spacer(Modifier.height(12.dp))
 
         Row(
@@ -404,6 +435,28 @@ fun WebGuidedSessionScreen(
             },
             onDismiss = { showConnect = false }
         )
+    }
+}
+
+@Composable
+private fun WebCoachCueCard(text: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.48f),
+        tonalElevation = 1.dp
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Text("COACH", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                minLines = 2,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

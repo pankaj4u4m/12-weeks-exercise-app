@@ -25,12 +25,14 @@ data class Exercise(
      *  Only ever this source for the loop — never mixed with wger's or
      *  ExerciseDB's own images. */
     val freeExerciseDbId: String? = null,
+    /** Media file bundled with the app under `exercise_media/`. Used for
+     *  curated public-domain / openly licensed demos that are safer and more
+     *  reliable to ship locally than to hotlink. GIF assets animate on Android
+     *  through Coil's GIF decoder and render normally on the web. */
+    val bundledMediaAsset: String? = null,
     /** One-off free/no-key media hotlink for an exercise that doesn't fit
-     *  any of the id-based providers above — e.g. a Wikimedia Commons file,
-     *  verified individually (correct movement, redistributable license)
-     *  rather than matched by name. Attribution for every URL used here is
-     *  tracked centrally in `CREDITS.md`, not per-field, since as of writing
-     *  there's exactly one of these (see "Jumping Jack" in program-1.json). */
+     *  any of the id-based providers above. Verified individually (correct
+     *  movement, redistributable license) and credited in `CREDITS.md`. */
     val externalMediaUrl: String? = null
 ) {
     val isTimed: Boolean get() = seconds != null
@@ -67,11 +69,14 @@ data class Exercise(
 }
 
 /** A titled block of exercises: "Warm up", "Round 3", "Cool Down". */
+/** A titled block of exercises. [restAfterSeconds] is recovery metadata,
+ *  deliberately separate from [exercises] so rest is never counted or
+ *  rendered as an exercise. */
 data class Section(
     val title: String,
-    val exercises: List<Exercise>
+    val exercises: List<Exercise>,
+    val restAfterSeconds: Int = 0
 )
-
 data class Workout(
     /** Which library program this workout belongs to — namespaces progress
      *  keys so two different programs' "Week 1 Day 1" never collide. */

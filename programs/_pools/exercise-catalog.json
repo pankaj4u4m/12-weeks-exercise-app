@@ -130,7 +130,7 @@
       "focus": [],
       "wgerId": null,
       "exerciseDbId": "exr_41n2hynD9srC1kY7",
-      "freeExerciseDbId": null,
+      "freeExerciseDbId": "Dynamic_Chest_Stretch",
       "externalMediaUrl": null
     },
     {
@@ -357,7 +357,8 @@
       "wgerId": "1412",
       "exerciseDbId": null,
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "bicycle-crunch.jpg"
     },
     {
       "name": "Bird Dog",
@@ -729,7 +730,8 @@
       "wgerId": "1823",
       "exerciseDbId": null,
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "clamshell.png"
     },
     {
       "name": "Clap Push Up",
@@ -1073,7 +1075,7 @@
       "wgerId": null,
       "exerciseDbId": "exr_41n2hW9gDXAJJMmH",
       "freeExerciseDbId": null,
-      "externalMediaUrl": "https://upload.wikimedia.org/wikipedia/commons/5/57/Downward-Facing-Dog.JPG"
+      "bundledMediaAsset": "downward-facing-dog.jpg"
     },
     {
       "name": "Dumbbell Bench Press",
@@ -2490,7 +2492,8 @@
       "wgerId": "1766",
       "exerciseDbId": null,
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "plank-reach.jpg"
     },
     {
       "name": "Plank Shoulder Taps",
@@ -2593,7 +2596,8 @@
       "wgerId": "1462",
       "exerciseDbId": "exr_41n2hezAZ6CdkAcM",
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "punches.jpg"
     },
     {
       "name": "Push-ups",
@@ -2659,7 +2663,8 @@
       "wgerId": null,
       "exerciseDbId": "exr_41n2hSMjcavNjk3c",
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "quick-feet.jpg"
     },
     {
       "name": "Rear Delt Fly",
@@ -2780,7 +2785,7 @@
       "focus": [],
       "wgerId": null,
       "exerciseDbId": "exr_41n2hNXJadYcfjnd",
-      "freeExerciseDbId": null,
+      "freeExerciseDbId": "Pushups",
       "externalMediaUrl": null
     },
     {
@@ -2918,7 +2923,8 @@
       "wgerId": null,
       "exerciseDbId": "exr_41n2haAabPyN5t8y",
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "side-lunge.jpg"
     },
     {
       "name": "Side Lunge Stretch",
@@ -2934,7 +2940,8 @@
       "wgerId": null,
       "exerciseDbId": "exr_41n2hRaLxY7YfNbg",
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "side-lunge.jpg"
     },
     {
       "name": "Side Plank",
@@ -3068,7 +3075,7 @@
       ],
       "wgerId": "702",
       "exerciseDbId": "exr_41n2hhumxqyAFuTb",
-      "freeExerciseDbId": null,
+      "freeExerciseDbId": "Standing_Calf_Raises",
       "externalMediaUrl": null
     },
     {
@@ -3497,7 +3504,8 @@
       "wgerId": null,
       "exerciseDbId": "exr_41n2hYXWwoxiUk57",
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "static-lunge.gif"
     },
     {
       "name": "Step-ups",
@@ -3549,7 +3557,7 @@
       ],
       "wgerId": "632",
       "exerciseDbId": "exr_41n2hYAP9oGEZk2P",
-      "freeExerciseDbId": null,
+      "freeExerciseDbId": "Plie_Dumbbell_Squat",
       "externalMediaUrl": null
     },
     {
@@ -3805,7 +3813,7 @@
       "focus": [],
       "wgerId": "1713",
       "exerciseDbId": "exr_41n2hQeNyCnt3uFh",
-      "freeExerciseDbId": null,
+      "freeExerciseDbId": "Chest_And_Front_Of_Shoulder_Stretch",
       "externalMediaUrl": null
     },
     {
@@ -3822,7 +3830,7 @@
       "focus": [],
       "wgerId": "1713",
       "exerciseDbId": "exr_41n2hQeNyCnt3uFh",
-      "freeExerciseDbId": null,
+      "freeExerciseDbId": "Chest_And_Front_Of_Shoulder_Stretch",
       "externalMediaUrl": null
     },
     {
@@ -3841,7 +3849,8 @@
       "wgerId": "1408",
       "exerciseDbId": "exr_41n2hvjrFJ2KjzGm",
       "freeExerciseDbId": null,
-      "externalMediaUrl": null
+      "externalMediaUrl": null,
+      "bundledMediaAsset": "wall-sit.jpg"
     },
     {
       "name": "Weighted Crunch",

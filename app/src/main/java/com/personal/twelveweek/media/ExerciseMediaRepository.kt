@@ -27,12 +27,12 @@ class ExerciseMediaRepository(
      * 2. [FreeExerciseDb] photo loop (free, no key, public domain) — exactly
      *    that source's own two step photos, never mixed with another
      *    provider's images.
-     * 3. [Exercise.externalMediaUrl] — a one-off free hotlink (currently
-     *    just "Jumping Jack" → a Wikimedia Commons GIF; see CREDITS.md),
-     *    for exercises free-exercise-db has no entry for at all.
-     * 4. ExerciseDB (RapidAPI, needs the user's own free key) — whichever it
+     * 3. [Exercise.bundledMediaAsset] — locally bundled public-domain/openly
+     *    licensed media, reliable offline and not dependent on hotlink headers.
+     * 4. [Exercise.externalMediaUrl] — a one-off verified free hotlink.
+     * 5. ExerciseDB (RapidAPI, needs the user's own free key) — whichever it
      *    actually has, video or image.
-     * 5. wger's static photo, as a last resort.
+     * 6. wger's static photo, as a last resort.
      */
     suspend fun getBundle(exercise: Exercise): List<MediaPage> {
         val pages = mutableListOf<MediaPage>()
@@ -43,6 +43,10 @@ class ExerciseMediaRepository(
         exercise.freeExerciseDbId?.let { id ->
             val urls = FreeExerciseDb.imageUrls(id)
             if (urls.isNotEmpty()) pages += MediaPage.ImageLoop(urls)
+        }
+
+        exercise.bundledMediaAsset?.let { asset ->
+            pages += MediaPage.Image("file:///android_asset/exercise_media/$asset")
         }
 
         exercise.externalMediaUrl?.let { url -> pages += MediaPage.Image(url) }

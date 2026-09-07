@@ -18,6 +18,16 @@ fun Workout.guidedSteps(): List<GuidedStep> = buildList {
         section.exercises.forEachIndexed { i, exercise ->
             add(GuidedStep(s, section.title, i, exercise, keyFor(s, i)))
         }
+        if (section.restAfterSeconds > 0) {
+            val restIndex = section.exercises.size
+            val rest = Exercise(
+                raw = "${section.restAfterSeconds}s Rest",
+                name = "Pause",
+                reps = null,
+                seconds = section.restAfterSeconds
+            )
+            add(GuidedStep(s, "Rest", restIndex, rest, keyFor(s, restIndex)))
+        }
     }
 }
 

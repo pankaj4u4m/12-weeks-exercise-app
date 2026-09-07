@@ -17,7 +17,7 @@ import kotlinx.serialization.json.Json
  */
 class ProgramLibrary(
     private val assets: BundledAssetReader = BundledAssetReader(),
-    private val cache: RawPreferenceStore = RawPreferenceStore("programs_cache"),
+    private val cache: RawPreferenceStore = RawPreferenceStore("programs_cache_curated_plans_v10_balanced_sessions"),
     private val custom: RawPreferenceStore = RawPreferenceStore("custom_programs")
 ) {
 

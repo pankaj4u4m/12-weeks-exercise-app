@@ -55,16 +55,15 @@ import com.personal.twelveweek.settings.AppSettings
 import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /** Same per-rep pacing the program library's own estimatedMinutes figures
  *  are built from — reused here so a rep set's auto-advance timing matches
  *  what the program picker already promised the user for this workout. */
 private const val SECONDS_PER_REP = 2.5
 
-/** Chance a motivational cue is shown for any given step — kept under 1.0
- *  so cues feel like an occasional nudge rather than commentary on every
- *  single movement. */
-private const val MOTIVATION_CHANCE = 0.5f
+/** Most work/stretch steps get spoken coaching; the cue is always visible. */
+private const val MOTIVATION_CHANCE = 0.9f
 
 @Composable
 fun GuidedSessionScreen(
@@ -124,6 +123,11 @@ fun GuidedSessionScreen(
 
     val voice = rememberVoiceCoach(isEnabled = { settings.voiceEnabled })
 
+    LaunchedEffect(workout.programId, workout.week, workout.index) {
+        delay(650)
+        voice.speak(WorkoutIntroCues.pick(workout.programId))
+    }
+
     BackHandler(onBack = onExit)
 
     // Guards against completing/advancing the same step twice — e.g. its
@@ -148,18 +152,20 @@ fun GuidedSessionScreen(
 
     LaunchedEffect(transitioning) {
         if (!transitioning) return@LaunchedEffect
-        // The completion buzz/beep fires right as this flips true — give it a
-        // beat to finish before the "Up next" voice cue starts, so the two
-        // don't talk over each other.
-        delay(450)
         val nextStep = steps[nextIndex]
-        voice.speak(
-            when {
-                nextStep.exercise.isRest -> RestCues.start()
-                nextStep.sectionTitle.equals("Cool Down", ignoreCase = true) -> StretchCues.start()
-                else -> "Up next: ${nextStep.exercise.name}"
-            }
-        )
+        // Keep the voice cue inside the configured transition instead of
+        // extending every transition by another 450 ms. This keeps guided
+        // workout wall-clock timing equal to the configured whole seconds.
+        launch {
+            delay(450)
+            voice.speak(
+                when {
+                    nextStep.exercise.isRest -> RestCues.start()
+                    isStretchSection(nextStep.sectionTitle) -> StretchCues.start()
+                    else -> "Up next: ${nextStep.exercise.name}"
+                }
+            )
+        }
         while (transitioning && transitionRemaining > 0) {
             delay(1000)
             transitionRemaining -= 1
@@ -170,7 +176,7 @@ fun GuidedSessionScreen(
         }
     }
 
-    val finisherLine = remember(finished) { if (finished) FinisherCues.pick() else "" }
+    val finisherLine = remember(finished) { if (finished) FinisherCues.pick(workout.programId) else "" }
     LaunchedEffect(finished) {
         if (finished) voice.speak(finisherLine)
     }
@@ -187,7 +193,7 @@ fun GuidedSessionScreen(
     if (finished) {
         SessionCompleteScreen(
             headline = finisherLine,
-            movementCount = steps.size,
+            movementCount = steps.count { !it.exercise.isRest },
             streakDays = progress.currentStreak(),
             newMilestones = newMilestones,
             onExit = onExit
@@ -197,7 +203,7 @@ fun GuidedSessionScreen(
 
     if (transitioning) {
         val nextStep = steps[nextIndex]
-        val nextIsCooldown = nextStep.sectionTitle.equals("Cool Down", ignoreCase = true)
+        val nextIsCooldown = isStretchSection(nextStep.sectionTitle)
         TransitionScreen(
             label = when {
                 nextStep.exercise.isRest -> "REST UP"
@@ -228,6 +234,17 @@ fun GuidedSessionScreen(
 
     val totalSeconds = step.exercise.seconds
     val repsCount = step.exercise.reps
+    val exerciseTotal = remember(steps) { steps.count { !it.exercise.isRest } }
+    val exerciseOrdinal = remember(index, steps) { steps.take(index + 1).count { !it.exercise.isRest } }
+    val coachTags = remember(step.key, exerciseOrdinal, exerciseTotal) {
+        when {
+            step.exercise.isRest -> setOf("rest")
+            else -> motivationTagsFor(step.exercise.name, step.sectionTitle, exerciseOrdinal, exerciseTotal)
+        }
+    }
+    var coachCueText by remember(step.key, workout.programId) {
+        mutableStateOf(MotivationLibrary.pick(coachTags, workout.programId).text)
+    }
 
     // ---- timed step: auto-starting countdown; the button on-screen just
     // lets the user pause/resume, it no longer has to be tapped to begin ----
@@ -247,8 +264,15 @@ fun GuidedSessionScreen(
                 voice.speak(
                     when {
                         step.exercise.isRest -> RestCues.halfway()
-                        step.sectionTitle.equals("Cool Down", ignoreCase = true) -> StretchCues.halfway()
-                        else -> "Halfway there"
+                        isStretchSection(step.sectionTitle) -> {
+                            coachCueText = MotivationLibrary.pick(coachTags, workout.programId, coachCueText).text
+                            StretchCues.halfway()
+                        }
+                        else -> {
+                            val nextCue = MotivationLibrary.pick(coachTags, workout.programId, coachCueText).text
+                            coachCueText = nextCue
+                            nextCue
+                        }
                     }
                 )
             }
@@ -257,7 +281,7 @@ fun GuidedSessionScreen(
                 voice.speak(
                     when {
                         step.exercise.isRest -> RestCues.almostDone()
-                        step.sectionTitle.equals("Cool Down", ignoreCase = true) -> StretchCues.almostDone()
+                        isStretchSection(step.sectionTitle) -> StretchCues.almostDone()
                         else -> "5 seconds remaining"
                     }
                 )
@@ -282,6 +306,7 @@ fun GuidedSessionScreen(
     var repElapsed by remember(step.key) { mutableIntStateOf(0) }
     var repRunning by remember(step.key) { mutableStateOf(repsCount != null) }
     var announcedGo by remember(step.key) { mutableStateOf(false) }
+    var announcedRepHalfway by remember(step.key) { mutableStateOf(false) }
 
     LaunchedEffect(step.key, repRunning) {
         if (repsCount == null || repTargetSeconds == null || !repRunning) return@LaunchedEffect
@@ -297,6 +322,12 @@ fun GuidedSessionScreen(
         while (repRunning && repElapsed < repTargetSeconds) {
             delay(1000)
             repElapsed += 1
+            if (repTargetSeconds >= 12 && !announcedRepHalfway && repElapsed >= repTargetSeconds / 2) {
+                announcedRepHalfway = true
+                val nextCue = MotivationLibrary.pick(coachTags, workout.programId, coachCueText).text
+                coachCueText = nextCue
+                voice.speak(nextCue)
+            }
         }
         if (repRunning && repElapsed >= repTargetSeconds) {
             buzz(context)
@@ -331,20 +362,13 @@ fun GuidedSessionScreen(
         else -> 0f
     }
 
-    // ---- motivational cue: a short, tag-matched line shown/spoken once per
-    // step at most, well after the "up next"/"get ready"/"go" cues so it
-    // never talks over them (rep steps have their own configurable prep
-    // delay, so wait that out plus a beat), and only some of the time so it
-    // doesn't nag ----
+    // ---- coach cue: always visible; spoken on most work/stretch steps.
+    // Rest already has start/halfway/five-second voice beats, so it stays
+    // visually coached without adding another overlapping voice line. ----
     LaunchedEffect(step.key) {
-        if (Random.nextFloat() > MOTIVATION_CHANCE) return@LaunchedEffect
-        delay(if (repsCount != null) (repPrepSeconds + 2) * 1000L else 2500L)
-        val tags = when {
-            step.exercise.isRest -> setOf("general")
-            step.sectionTitle.equals("Cool Down", ignoreCase = true) -> setOf("stretch")
-            else -> motivationTagsFor(step.exercise.name, step.sectionTitle)
-        }
-        voice.speak(MotivationLibrary.pick(tags).text)
+        if (step.exercise.isRest || Random.nextFloat() > MOTIVATION_CHANCE) return@LaunchedEffect
+        delay(if (repsCount != null) (repPrepSeconds + 2) * 1000L else 3000L)
+        voice.speak(coachCueText)
     }
 
     Column(
@@ -365,7 +389,7 @@ fun GuidedSessionScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    "${index + 1} of ${steps.size}",
+                    if (step.exercise.isRest) "Rest" else "$exerciseOrdinal of $exerciseTotal",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -427,6 +451,8 @@ fun GuidedSessionScreen(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Spacer(Modifier.height(8.dp))
+        CoachCueCard(coachCueText)
         Spacer(Modifier.height(12.dp))
 
         Row(
@@ -468,6 +494,34 @@ fun GuidedSessionScreen(
             },
             onDismiss = { showConnect = false }
         )
+    }
+}
+
+@Composable
+private fun CoachCueCard(text: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.48f),
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Text(
+                "COACH",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                minLines = 2,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

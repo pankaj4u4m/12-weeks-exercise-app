@@ -32,10 +32,12 @@ class WebExerciseMediaRepository(
             if (urls.isNotEmpty()) pages += WebMediaPage.ImageLoop(urls)
         }
 
-        // One-off free hotlink for an exercise free-exercise-db has no entry
-        // for at all (currently just "Jumping Jack" → a Wikimedia Commons
-        // GIF; see CREDITS.md). Renders through WebAsyncImage, which is a
-        // real <img> DOM overlay, so an animated GIF here actually animates.
+        exercise.bundledMediaAsset?.let { asset ->
+            pages += WebMediaPage.Image("exercise_media/$asset")
+        }
+
+        // One-off verified free hotlink. WebAsyncImage renders through a real
+        // <img> DOM overlay, so an animated GIF here actually animates.
         exercise.externalMediaUrl?.let { url -> pages += WebMediaPage.Image(url) }
 
         val apiKey = keyManager.getSuspend()

@@ -65,6 +65,19 @@ class ExerciseMediaRepositoryTest {
     }
 
     @Test
+    fun `bundled asset alone produces local media with no network call`() = runBlocking {
+        val exercise = Exercise.parse("20 Clamshell").copy(bundledMediaAsset = "clamshell.png")
+        val bundle = repo(null).getBundle(exercise)
+        assertEquals(1, bundle.size)
+        assertEquals(
+            "file:///android_asset/exercise_media/clamshell.png",
+            (bundle[0] as MediaPage.Image).url
+        )
+        assertEquals(0, wgerServer.requestCount)
+        assertEquals(0, exerciseDbServer.requestCount)
+    }
+
+    @Test
     fun `freeExerciseDbId alone produces an image loop with no network call`() = runBlocking {
         val exercise = Exercise.parse("20 Squats").copy(freeExerciseDbId = "Mountain_Climbers")
         val bundle = repo(null).getBundle(exercise)

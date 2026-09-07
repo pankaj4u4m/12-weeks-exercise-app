@@ -29,11 +29,16 @@ private data class ExerciseDto(
     val wgerId: String? = null,
     val exerciseDbId: String? = null,
     val freeExerciseDbId: String? = null,
+    val bundledMediaAsset: String? = null,
     val externalMediaUrl: String? = null
 )
 
 @Serializable
-private data class SectionDto(val title: String, val exercises: List<ExerciseDto> = emptyList())
+private data class SectionDto(
+    val title: String,
+    val exercises: List<ExerciseDto> = emptyList(),
+    val restAfterSeconds: Int = 0
+)
 
 @Serializable
 private data class WorkoutDto(val index: Int, val sections: List<SectionDto> = emptyList(), val estimatedMinutes: Int = 0)
@@ -86,10 +91,15 @@ private fun ExerciseDto.toDomain() = Exercise(
     wgerId = wgerId,
     exerciseDbId = exerciseDbId,
     freeExerciseDbId = freeExerciseDbId,
+    bundledMediaAsset = bundledMediaAsset,
     externalMediaUrl = externalMediaUrl
 )
 
-private fun SectionDto.toDomain() = Section(title = title, exercises = exercises.map { it.toDomain() })
+private fun SectionDto.toDomain() = Section(
+    title = title,
+    exercises = exercises.map { it.toDomain() },
+    restAfterSeconds = restAfterSeconds
+)
 
 private fun WorkoutDto.toDomain(programId: String, week: Int) = Workout(
     programId = programId,
