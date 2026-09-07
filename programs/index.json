@@ -1,0 +1,54 @@
+{
+  "programs": [
+    {
+      "id": "program-1",
+      "title": "Full Body · 30 min",
+      "level": "INTERMEDIATE",
+      "focusAreas": [
+        "FULL_BODY",
+        "STRENGTH",
+        "CORE"
+      ],
+      "equipment": [
+        "HOME"
+      ],
+      "weeks": 12,
+      "file": "programs/program-1.json",
+      "sessionMinutes": 30
+    },
+    {
+      "id": "program-2",
+      "title": "Full Body · 15 min · Weights",
+      "level": "INTERMEDIATE",
+      "focusAreas": [
+        "FULL_BODY",
+        "STRENGTH",
+        "CORE"
+      ],
+      "equipment": [
+        "HOME"
+      ],
+      "weeks": 12,
+      "file": "programs/program-2.json",
+      "sessionMinutes": 15
+    },
+    {
+      "id": "program-3",
+      "title": "Knee-Friendly Full Body · Weights",
+      "level": "INTERMEDIATE",
+      "focusAreas": [
+        "FULL_BODY",
+        "LEGS",
+        "STRENGTH",
+        "CORE",
+        "UPPER_BODY"
+      ],
+      "equipment": [
+        "HOME"
+      ],
+      "weeks": 12,
+      "file": "programs/program-3.json",
+      "sessionMinutes": 20
+    }
+  ]
+}
